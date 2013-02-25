@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DotNetWikiBot;
@@ -46,6 +47,25 @@ namespace DotNetWikiBotExtensions
         /// The parameters of the template
         /// </summary>
         public Dictionary<string, string> Parameters { get; set; }
+
+
+        public void ChangeParametername(string oldKey, string newKey)
+        {
+            if (oldKey == null)
+                throw new ArgumentNullException("oldKey");
+            if (newKey == null)
+                throw new ArgumentNullException("newKey");
+
+            var newParameter = new Dictionary<string, string>(Parameters.Count);
+
+            foreach (var pair in Parameters)
+            {
+                newParameter.Add(pair.Key.Equals(oldKey) ? newKey : pair.Key, pair.Value);
+            }
+
+            Parameters = newParameter;
+        }
+
 
         /// <summary>
         /// Save changes of the template to the page
