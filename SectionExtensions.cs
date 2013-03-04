@@ -9,7 +9,7 @@ namespace DotNetWikiBotExtensions
 {
     public static class SectionExtensions
     {
-        private static readonly Regex HeaderRegex = new Regex(@"^(=+)\s?([^=]+)\s?\1\s*$", RegexOptions.Multiline);
+        internal static readonly Regex HeaderRegex = new Regex(@"^(=+)\s?([^=]+?)\s?\1\s*$", RegexOptions.Multiline);
 
         public static IEnumerable<Section> GetAllSections(this Page page)
         {
@@ -42,22 +42,92 @@ namespace DotNetWikiBotExtensions
             if(lastHeadingPos < text.Length)
                 yield return new Section(text.Substring(lastHeadingPos, text.Length - lastHeadingPos), page, lowestHeading);
         } 
+
+        public static Section GetByName(this Page page, string name, bool recursive)
+        {
+            return GetByName(page.GetAllSections(), name, recursive);
+        }
+
+        public static Section GetByName(this IEnumerable<Section> allSections, string name, bool recursive)
+        {
+            var sections = new Queue<Section>(allSections);
+
+            while (sections.Count > 0)
+            {
+                var section = sections.Dequeue();
+                if (section.Title == name) return section;
+
+                if (recursive)
+                    foreach (var s in section.Subsections) sections.Enqueue(s);
+            }
+
+            return null;
+        }
+
+        public static Section GetByPath(this Page page, params string[] path)
+        {
+            return GetByPath(page.GetAllSections(), path);
+        }
+
+        public static Section GetByPath(this IEnumerable<Section> allSections, params string[] path)
+        {
+            if(path.Length == 0) throw  new ArgumentException("path cant be empty");
+
+            var depth = 0;
+            var sections = new Queue<Section>(allSections);
+
+            while(sections.Count > 0)
+            {
+                var section = sections.Dequeue();
+                if (section.Title != path[depth]) continue;
+
+                depth++;
+                if (depth == path.Length)
+                    return section;
+                sections = new Queue<Section>(section.Subsections);
+            }
+
+            return null;
+        }
     }
 
     public class Section
     {
-        public string Content { get; set; }
+        private string _originalContent;
+        private string _title;
+        private string _content;
         public Page Page { get; private set; }
         public int Level { get; private set; }
         public IEnumerable<Section> Subsections { get; private set; }
-        private string _originalContent;
-    
+        public string Content
+        {
+            get { return _content; }
+            set
+            {
+                _content = value;
+                var match = SectionExtensions.HeaderRegex.Match(_content);
+                Level = match.Groups[1].Length;
+                _title = match.Groups[2].Value;
+            }
+        }
+
+        public string Title
+        {
+            get { return _title; }
+            set
+            {
+                _title = value;
+                SectionExtensions.HeaderRegex.Replace(Content, string.Format(@"\1 {0} \1", value));
+            }
+        }
+
         public Section(string content, Page page, int level)
         {
             _originalContent = content;
             Content = content;
             Page = page;
             Level = level;
+
             Subsections = SectionExtensions.GetAllSections(Content, page, level + 1);
         }
 
