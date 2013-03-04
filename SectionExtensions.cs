@@ -43,7 +43,7 @@ namespace DotNetWikiBotExtensions
                 yield return new Section(text.Substring(lastHeadingPos, text.Length - lastHeadingPos), page, lowestHeading);
         } 
 
-        public static Section GetByName(this Page page, string name, bool recursive)
+        public static Section GetSectionByName(this Page page, string name, bool recursive)
         {
             return GetByName(page.GetAllSections(), name, recursive);
         }
@@ -64,7 +64,7 @@ namespace DotNetWikiBotExtensions
             return null;
         }
 
-        public static Section GetByPath(this Page page, params string[] path)
+        public static Section GetSectionByPath(this Page page, params string[] path)
         {
             return GetByPath(page.GetAllSections(), path);
         }
