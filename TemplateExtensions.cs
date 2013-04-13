@@ -20,6 +20,11 @@ namespace DotNetWikiBotExtensions
 
     public class Template
     {
+        private bool _removed = false;
+        private string _title;
+        private string _text;
+        private Dictionary<string, string> _parameters;
+
         internal Template(Page p, string s)
         {
             Page = p;
@@ -36,21 +41,46 @@ namespace DotNetWikiBotExtensions
         /// <summary>
         /// The Title of the template
         /// </summary>
-        public string Title { get; set; }
+        public string Title
+        {
+            get { return _title; }
+            set
+            {
+                ThrowIfRemoved();
+                _title = value;
+            }
+        }
 
         /// <summary>
         /// The innertext of the template (including title, bot NOT the outer brackets)
         /// </summary>
-        public string Text { get; set; }
+        public string Text
+        {
+            get { return _text; }
+            set
+            {
+                ThrowIfRemoved();
+                _text = value;
+            }
+        }
 
         /// <summary>
         /// The parameters of the template
         /// </summary>
-        public Dictionary<string, string> Parameters { get; set; }
-
+        public Dictionary<string, string> Parameters
+        {
+            get { return _parameters; }
+            set
+            {
+                ThrowIfRemoved();
+                _parameters = value;
+            }
+        }
 
         public void ChangeParametername(string oldKey, string newKey)
         {
+            ThrowIfRemoved();
+
             if (oldKey == null)
                 throw new ArgumentNullException("oldKey");
             if (newKey == null)
@@ -72,10 +102,29 @@ namespace DotNetWikiBotExtensions
         /// </summary>
         public void Save()
         {
+            if(_removed) return;
+
             var oldTemplate = new Regex(Regex.Escape(Text));
             var newTemplate = Page.site.FormatTemplate(Title, Parameters, Text);
             newTemplate = newTemplate.Substring(2, newTemplate.Length - 4);
             Page.text = oldTemplate.Replace(Page.text, newTemplate, 1);
+        }
+
+        /// <summary>
+        /// Removes the template from the Page
+        /// </summary>
+        public void Remove()
+        {
+            ThrowIfRemoved("This template is already removed");
+
+            Page.text = Regex.Replace(Page.text, string.Format(@"{0}([^\S\n]*\n)?", Regex.Escape("{{" + Text + "}}")), "");
+
+            _removed = true;
+        }
+
+        private void ThrowIfRemoved(string msg = "This template is removed")
+        {
+            if(_removed) throw new Exception(msg);
         }
     }
 }
