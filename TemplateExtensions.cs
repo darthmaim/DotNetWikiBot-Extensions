@@ -96,6 +96,42 @@ namespace DotNetWikiBotExtensions
             Parameters = newParameter;
         }
 
+        /// <summary>
+        /// Inserts a new Parameter 
+        /// </summary>
+        /// <param name="key">new key</param>
+        /// <param name="value">new value</param>
+        /// <param name="after">after what parameter the new one should be inserted</param>
+        public void InsertParameterAfter(string key, string value, params string[] after)
+        {
+            ThrowIfRemoved();
+
+            if (key == null)
+                throw new ArgumentNullException("key");
+            if (value == null)
+                throw new ArgumentNullException("value");
+
+            if(Parameters.ContainsKey(key))
+                throw new ArgumentException(string.Format("Parameters already contains a key '{0}'", key));
+
+            foreach (var afterKey in after)
+            {
+                if (Parameters.ContainsKey(afterKey))
+                {
+                    var newParameter = new Dictionary<string, string>(Parameters.Count + 1);
+                    foreach (var pair in Parameters)
+                    {
+                        newParameter.Add(pair.Key, pair.Value);
+                        if (pair.Key == afterKey)
+                            newParameter.Add(key, value);
+                    }
+                    Parameters = newParameter;
+                    return;
+                }
+            }
+
+            Parameters.Add(key, value);
+        }
 
         /// <summary>
         /// Save changes of the template to the page
